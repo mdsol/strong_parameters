@@ -48,6 +48,10 @@ To declare that the value in +params+ must be an array of values of a certain ty
 
     params.permit(:id => [Numeric])
 
+== Defaults with ActiveRecord
+
+  If a parameter shares a name with an ActiveRecord model, the default types for its attributes are those of that model, rather than String.
+
 == Nested Parameters
 
 You can also use permit on nested parameters, like:
