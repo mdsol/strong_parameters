@@ -29,16 +29,18 @@ module ActionController
   class Parameters < ActiveSupport::HashWithIndifferentAccess
     attr_accessor :permitted
     alias :permitted? :permitted
-    
+    attr_accessor :klass
+
     cattr_accessor :action_on_unpermitted_parameters, :instance_accessor => false
 
     # Never raise an UnpermittedParameters exception because of these params
     # are present. They are added by Rails and it's of no concern.
     NEVER_UNPERMITTED_PARAMS = %w( controller action )
 
-    def initialize(attributes = nil)
+    def initialize(attributes = nil, klass = String)
       super(attributes)
       @permitted = false
+      @klass = klass
     end
 
     def permit!
@@ -59,13 +61,12 @@ module ActionController
 
     def permit(*filters)
       params = self.class.new
-
       filters.each do |filter|
-        case filter
-        when Symbol, String
-          permitted_scalar_filter(params, filter)
-        when Hash then
-          hash_filter(params, filter)
+        rule = filter.is_a?(Hash) ? filter : default_rule(filter)
+        if rule.values.one? && rule.values.first.is_a?(Class)
+          permitted_scalar_filter(params, rule.keys.first, rule.values.first)
+        else
+          apply_filter(params, rule)
         end
       end
 
@@ -119,79 +120,68 @@ module ActionController
         end
       end
 
-      #
-      # --- Filtering ----------------------------------------------------------
-      #
-
-      # This is a white list of permitted scalar types that includes the ones
-      # supported in XML and JSON requests.
-      #
-      # This list is in particular used to filter ordinary requests, String goes
-      # as first element to quickly short-circuit the common case.
-      #
-      # If you modify this collection please update the README.
-      PERMITTED_SCALAR_TYPES = [
-        String,
-        Symbol,
-        NilClass,
-        Numeric,
-        TrueClass,
-        FalseClass,
-        Date,
-        Time,
-        # DateTimes are Dates, we document the type but avoid the redundant check.
-        StringIO,
-        IO,
-        ActionDispatch::Http::UploadedFile,
-      ]
-
-      def permitted_scalar?(value)
-        PERMITTED_SCALAR_TYPES.any? {|type| value.is_a?(type)}
+      def permitted_scalar?(value, klass)
+        value.is_a?(klass)
       end
 
-      def array_of_permitted_scalars?(value)
+      def array_of_permitted_scalars?(value,klass)
         if value.is_a?(Array)
-          value.all? {|element| permitted_scalar?(element)}
+          value.all? {|element| permitted_scalar?(element,klass)}
         end
       end
 
-      def permitted_scalar_filter(params, key)
-        if has_key?(key) && permitted_scalar?(self[key])
+      def permitted_scalar_filter(params, key, klass)
+        if has_key?(key) && permitted_scalar?(self[key],klass)
           params[key] = self[key]
         end
 
         keys.grep(/\A#{Regexp.escape(key.to_s)}\(\d+[if]?\)\z/).each do |key|
-          if permitted_scalar?(self[key])
+          if permitted_scalar?(self[key],klass)
             params[key] = self[key]
           end
         end
       end
 
-      def array_of_permitted_scalars_filter(params, key)
-        if has_key?(key) && array_of_permitted_scalars?(self[key])
+      def array_of_permitted_scalars_filter(params, key, rule)
+        raise ArgumentError unless rule.one?
+        if has_key?(key) && array_of_permitted_scalars?(self[key],rule.first)
           params[key] = self[key]
         end
       end
 
-      def hash_filter(params, filter)
+      def apply_filter(params, filter)
         filter = filter.with_indifferent_access
 
         # Slicing filters out non-declared keys.
         slice(*filter.keys).each do |key, value|
-          return unless value
 
-          if filter[key] == []
-            # Declaration {:comment_ids => []}.
-            array_of_permitted_scalars_filter(params, key)
+          rule = filter[key]
+
+          # Declaration {:favorite_numbers => [Numeric]}
+          if rule.is_a?(Array) && rule.first.is_a?(Class)
+            array_of_permitted_scalars_filter(params, key, rule)
+          # Declaration {:favorite_number => Numeric} or :uuid [=> String]
+          elsif rule.is_a?(Class)
+            permitted_scalar_filter(params, key, rule)
           else
-            # Declaration {:user => :name} or {:user => [:name, :age, {:adress => ...}]}.
+            # Declaration {:user => :name} or {:user => [:name, :age, {:address => ...}]}
+            raise ArgumentError if rule.empty?
             params[key] = each_element(value) do |element|
               if element.is_a?(Hash)
                 element = self.class.new(element) unless element.respond_to?(:permit)
-                element.permit(*Array.wrap(filter[key]))
+                element.klass = key.camelize.constantize rescue String
+                element.permit(*Array.wrap(rule))
               end
             end
           end
+        end
+      end
+
+      def default_rule(filter)
+        if @klass.respond_to?(:columns) && (type = @klass.columns.find { |attr| attr.name == filter.to_s })
+          {filter => type.klass}
+        else
+          {filter => String}
         end
       end
 
@@ -208,22 +198,22 @@ module ActionController
         end
       end
 
-      def unpermitted_parameters!(params)  
+      def unpermitted_parameters!(params)
         return unless self.class.action_on_unpermitted_parameters
-        
+
         unpermitted_keys = unpermitted_keys(params)
 
-        if unpermitted_keys.any?  
-          case self.class.action_on_unpermitted_parameters  
-          when :log  
-            ActionController::Base.logger.debug "Unpermitted parameters: #{unpermitted_keys.join(", ")}"  
-          when :raise  
-            raise ActionController::UnpermittedParameters.new(unpermitted_keys)  
-          end  
-        end  
-      end  
-  
-      def unpermitted_keys(params)  
+        if unpermitted_keys.any?
+          case self.class.action_on_unpermitted_parameters
+          when :log
+            ActionController::Base.logger.debug "Unpermitted parameters: #{unpermitted_keys.join(", ")}"
+          when :raise
+            raise ActionController::UnpermittedParameters.new(unpermitted_keys)
+          end
+        end
+      end
+
+      def unpermitted_keys(params)
         self.keys - params.keys - NEVER_UNPERMITTED_PARAMS
       end
   end

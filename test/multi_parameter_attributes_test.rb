@@ -17,7 +17,6 @@ class MultiParameterAttributesTest < ActiveSupport::TestCase
         "price(2f)"        => "2.02"
       }
     })
-
     permitted = params.permit :book => [ :shipped_at, :price ]
 
     assert permitted.permitted?

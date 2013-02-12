@@ -1,6 +1,7 @@
-= Strong Parameters
+= Strong(ly typed) Parameters
 
 With this plugin Action Controller parameters are forbidden to be used in Active Model mass assignments until they have been whitelisted. This means you'll have to make a conscious choice about which attributes to allow for mass updating and thus prevent accidentally exposing that which shouldn't be exposed.
+In this fork, the type of each parameter is also validated to avoid unexpected behavior with implicit casting.
 
 In addition, parameters can be marked as required and flow through a predefined raise/rescue flow to end up as a 400 Bad Request with no effort.
 
@@ -29,25 +30,29 @@ In addition, parameters can be marked as required and flow through a predefined 
         end
     end
 
-== Permitted Scalar Values
+== Permitted Types
 
 Given
 
     params.permit(:id)
 
-the key +:id+ will pass the whitelisting if it appears in +params+ and it has a permitted scalar value associated. Otherwise the key is going to be filtered out, so arrays, hashes, or any other objects cannot be injected.
+the key +:id+ will pass the whitelisting if it appears in +params+ and is a String. Otherwise the key is going to be filtered out, so arrays, hashes, or any other objects cannot be injected.
 
-The permitted scalar types are +String+, +Symbol+, +NilClass+, +Numeric+, +TrueClass+, +FalseClass+, +Date+, +Time+, +DateTime+, +StringIO+, +IO+, and +ActionDispatch::Http::UploadedFile+.
+If instead the argument is given as
 
-To declare that the value in +params+ must be an array of permitted scalar values map the key to an empty array:
+    params.permit(:id => Numeric)
 
-    params.permit(:id => [])
+the +:id+ value must be a number. Any class or module can be given here.
+
+To declare that the value in +params+ must be an array of values of a certain type, wrap the type constant in an Array:
+
+    params.permit(:id => [Numeric])
 
 == Nested Parameters
 
 You can also use permit on nested parameters, like:
 
-    params.permit(:name, {:emails => []}, :friends => [ :name, { :family => [ :name ] }])
+    params.permit(:name, {:emails => [String]}, :friends => [ :name, { :family => [ :name ] }])
 
 Thanks to Nick Kallen for the permit idea!
 

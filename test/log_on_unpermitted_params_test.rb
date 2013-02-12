@@ -27,7 +27,7 @@ class LogOnUnpermittedParamsTest < ActiveSupport::TestCase
     })
 
     assert_logged("Unpermitted parameters: title") do
-      params.permit(:book => [:pages])
+      params.permit(:book => [:pages => Numeric])
     end
   end
 
