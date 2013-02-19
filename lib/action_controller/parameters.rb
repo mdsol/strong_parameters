@@ -161,7 +161,7 @@ module ActionController
           if rule.is_a?(Array) && rule.first.is_a?(Class)
             array_of_permitted_scalars_filter(params, key, rule)
           # Declaration {:favorite_number => Numeric} or :uuid [=> String]
-          elsif rule.is_a?(Class)
+          elsif rule.is_a?(Class) || rule.is_a?(Module)
             permitted_scalar_filter(params, key, rule)
           else
             # Declaration {:user => :name} or {:user => [:name, :age, {:address => ...}]}

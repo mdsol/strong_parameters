@@ -76,6 +76,21 @@ class NestedParametersTest < ActiveSupport::TestCase
     end
   end
 
+  test 'key: Boolean matches only true and false' do
+    params = ActionController::Parameters.new(:happy => true)
+    permitted = params.permit(:happy => Boolean)
+    assert_equal true, permitted[:happy]
+
+    params = ActionController::Parameters.new(:happy => false)
+    permitted = params.permit(:happy => Boolean)
+    assert_equal false, permitted[:happy]
+
+    params = ActionController::Parameters.new(:happy => Object.new)
+    permitted = params.permit(:happy => Boolean)
+    assert_filtered_out permitted, :happy
+
+  end
+
   test 'key: it is not assigned if not present in params' do
     params = ActionController::Parameters.new(:name => 'Joe')
     permitted = params.permit(:id)

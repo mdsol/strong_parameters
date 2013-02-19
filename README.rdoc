@@ -42,7 +42,7 @@ If instead the argument is given as
 
     params.permit(:id => Numeric)
 
-the +:id+ value must be a number. Any class or module can be given here.
+the +:id+ value must be a number. Any class or module can be given here. The marker module Boolean is included in TrueClass and FalseClass.
 
 To declare that the value in +params+ must be an array of values of a certain type, wrap the type constant in an Array:
 
