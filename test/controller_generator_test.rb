@@ -4,7 +4,6 @@
 
 require 'rails/generators/test_case'
 require 'generators/rails/strong_parameters_controller_generator'
-require 'debugger'
 
 class StrongParametersControllerGeneratorTest < Rails::Generators::TestCase
   tests Rails::Generators::StrongParametersControllerGenerator
@@ -19,7 +18,6 @@ class StrongParametersControllerGeneratorTest < Rails::Generators::TestCase
     assert_file "app/controllers/users_controller.rb" do |content|
 
       assert_instance_method :create, content do |m|
-        debugger
         assert_match '@user = User.new(user_params)', m
         assert_match '@user.save', m
         assert_match '@user.errors', m
