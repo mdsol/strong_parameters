@@ -50,7 +50,7 @@ To declare that the value in +params+ must be an array of values of a certain ty
 
 == Defaults with ActiveRecord
 
-  If a parameter shares a name with an ActiveRecord model, the default types for its attributes are those of that model, rather than String.
+If a parameter shares a name with an ActiveRecord model, the default types for its attributes are those of that model, rather than String.
 
 == Nested Parameters
 
