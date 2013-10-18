@@ -1,6 +1,6 @@
 Description:
     Stubs out a scaffolded controller and its views. Different from rails
-    scaffold_controller, it uses strong_parameters to whitelist permissible
+    scaffold_controller, it uses strongly_typed_parameters to whitelist permissible
     attributes in a private method.
     Pass the model name, either CamelCased or under_scored. The controller
     name is retrieved as a pluralized version of the model name.

@@ -1,4 +1,4 @@
 require 'action_controller/parameters'
 require 'active_model/forbidden_attributes_protection'
-require 'strong_parameters/railtie'
-require 'strong_parameters/boolean'
+require 'strongly_typed_parameters/railtie'
+require 'strongly_typed_parameters/boolean'
