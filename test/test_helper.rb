@@ -9,7 +9,7 @@ class FakeApplication < Rails::Application; end
 Rails.application = FakeApplication
 Rails.configuration.action_controller = ActiveSupport::OrderedOptions.new
 
-require 'strong_parameters'
+require 'strongly_typed_parameters'
 require 'mocha'
 
 module ActionController
